@@ -1,0 +1,83 @@
+Kuzu version: 0.11.3
+Platform: Linux x86-64
+Binary: official release CLI without debug symbols
+
+1. Relationship before deletion
+
+MATCH (a:Leaf)-[r:LINK]->(b:Leaf)
+RETURN a.id, r, b.id;
+
+Observed relationship:
+
+a.id = 3
+r._ID = 1:7
+b.id = 4
+weight = 1.0
+
+2. State after DETACH DELETE, CHECKPOINT, and database reopen
+
+node_count = 0
+rel_count  = 0
+
+3. PathPropertyProbe entry
+
+Breakpoint:
+kuzu::processor::PathPropertyProbe::probe(...)
+
+sizeProbed  = 0
+sizeToProbe = 1
+
+Decoded internal ID:
+
+id.offset  = 7
+id.tableID = 1
+
+The path property probe therefore receives the previously deleted
+relationship ID 1:7.
+
+Hash-table state:
+
+maxHashSlots = 0
+
+4. Fault
+
+Signal:
+
+SIGFPE, Arithmetic exception
+
+Faulting instruction:
+
+0x0000000000e87979
+kuzu::processor::PathPropertyProbe::probe(...) + 249
+
+=> divq 0x8(%r15)
+
+Divisor memory:
+
+$r15 + 8 = 0x0000000000000000
+
+5. Backtrace
+
+#0  kuzu::processor::PathPropertyProbe::probe(...)
+#1  kuzu::processor::PathPropertyProbe::getNextTuplesInternal(...)
+#2  kuzu::processor::PhysicalOperator::getNextTuple(...)
+#3  kuzu::processor::HashJoinProbe::getMatchedTuplesForUnFlatKey(...)
+#4  kuzu::processor::HashJoinProbe::getNextTuplesInternal(...)
+#5  kuzu::processor::PhysicalOperator::getNextTuple(...)
+#6  kuzu::processor::HashJoinProbe::getMatchedTuplesForUnFlatKey(...)
+#7  kuzu::processor::HashJoinProbe::getNextTuplesInternal(...)
+#8  kuzu::processor::PhysicalOperator::getNextTuple(...)
+#9  kuzu::processor::Projection::getNextTuplesInternal(...)
+#10 kuzu::processor::PhysicalOperator::getNextTuple(...)
+#11 kuzu::processor::ResultCollector::executeInternal(...)
+#12 kuzu::processor::ProcessorTask::run()
+#13 kuzu::common::TaskScheduler::runWorkerThread()
+
+6. Confirmed failure chain
+
+deleted relationship ID 1:7
+    -> recursive path output
+    -> PathPropertyProbe
+    -> zero-slot relationship property hash table
+    -> integer division by zero
+    -> SIGFPE

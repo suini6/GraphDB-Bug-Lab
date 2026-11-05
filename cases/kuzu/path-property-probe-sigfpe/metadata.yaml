@@ -1,0 +1,24 @@
+id: kuzu-path-property-probe-sigfpe
+title: Persistent SIGFPE in PathPropertyProbe after DETACH DELETE
+database: Kuzu
+affected_versions:
+  - 0.11.3
+platforms:
+  - Linux x86_64
+discovery_method: GRAF
+status: historical-known
+failure:
+  signal: SIGFPE
+  function: kuzu::processor::PathPropertyProbe::probe
+first_invalid_state: A deleted relationship ID enters recursive path property probing
+observed_relationship_id:
+  table_id: 1
+  offset: 7
+root_cause:
+  upstream: Recursive path execution does not fully enforce deleted-node visibility
+  crash: Hash lookup computes hash modulo zero hash slots
+related:
+  - https://github.com/kuzudb/kuzu/issues/4354
+  - https://github.com/LadybugDB/ladybug/issues/456
+  - https://github.com/LadybugDB/ladybug/pull/459
+cve: null

@@ -1,0 +1,33 @@
+# Database files and write-ahead logs
+*.db
+*.db.wal
+*.wal
+*.lbug
+
+# Crash dumps and debugger state
+core
+core.*
+*.core
+.gdb_history
+
+# Downloaded archives and binaries
+*.tar
+*.tar.gz
+*.zip
+/kuzu
+/lbug
+
+# Generated logs and temporary runs
+*.log
+runs/
+tmp/
+
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Editor and operating-system files
+.vscode/
+.DS_Store
